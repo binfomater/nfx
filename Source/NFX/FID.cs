@@ -55,11 +55,12 @@ namespace NFX
   /// the new IDs will not collide with IDs generated right before the crash for at least 14 days (14 day sliding window).
   /// In a parallel test on 6 Core i7 3.2 GHz this class generates 405 million IDs/sec, which is 57 times faster than Guid that only generates 7 million IDs/sec
   /// </summary>
-  public struct FID : IEquatable<FID>, DataAccess.Cache.IULongHashProvider
+  [Serializable]
+  public struct FID : IEquatable<FID>, DataAccess.Distributed.IDistributedStableHashProvider
   {
     private const int MASK_16_BIT = 0x0000ffff;
     private const int MASK_24_BIT = 0x00ffffff;
-    private static readonly DateTime START = new DateTime(2015, 1, 1);
+    private static readonly DateTime START = new DateTime(2015, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private static int s_Seed;
 
@@ -71,7 +72,7 @@ namespace NFX
     {
       var seed = (ulong)(Interlocked.Increment(ref s_Seed) & MASK_24_BIT) << 16;
 
-      var ts = ((ulong)((DateTime.Now - START).TotalMilliseconds / 100d) & 0x0000000000fffffful) << 40;//64-24
+      var ts = ((ulong)((DateTime.UtcNow - START).TotalMilliseconds / 100d) & 0x0000000000fffffful) << 40;//64-24
       
       ts_Prefix = ts | seed;//prefix is:  24 bit timestamp + 24 bit thread seed 
 
@@ -123,7 +124,7 @@ namespace NFX
       return "{0}-{1}-{2}".Args(ID >> 40, (ID >> 16) & MASK_24_BIT, ID & MASK_16_BIT);
     }
 
-    public ulong GetULongHash()
+    public ulong GetDistributedStableHash()
     {
       return ID;
     }

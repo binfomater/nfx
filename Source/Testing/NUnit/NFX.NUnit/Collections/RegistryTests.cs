@@ -80,6 +80,57 @@ namespace NFX.NUnit.Collections
        Assert.AreEqual(2, reg["Banana"].Data);
     }
 
+
+    [TestCase]
+    public void CaseInsensitiv()
+    {
+       var reg = new Registry<NamedClazz>();//INSENSITIVE
+       Assert.IsTrue(  reg.Register( new NamedClazz("Apple", 1) ) );
+       Assert.IsTrue(  reg.Register( new NamedClazz("Banana", 2) ) );
+       Assert.IsFalse(  reg.Register( new NamedClazz("APPLE", 3) ) );
+
+       Assert.AreEqual(2, reg.Count);
+
+       Assert.AreEqual(1, reg["Apple"].Data);
+       Assert.AreEqual(2, reg["Banana"].Data);
+       Assert.AreEqual(1, reg["APPLE"].Data);
+
+       Assert.IsFalse( reg.Unregister(new NamedClazz("I was never added before", 1)) );
+       Assert.AreEqual(2, reg.Count);
+
+       Assert.IsTrue( reg.Unregister(new NamedClazz("ApPle", 1)) );
+       Assert.AreEqual(1, reg.Count);
+       Assert.AreEqual(null, reg["Apple"]);
+       Assert.AreEqual(2, reg["Banana"].Data);
+    }
+
+    [TestCase]
+    public void CaseSensitive()
+    {
+       var reg = new Registry<NamedClazz>(true);//SENSITIVE!!!!!!!!!!!!!!!!!!!!!!!!!!!
+       Assert.IsTrue(  reg.Register( new NamedClazz("Apple", 1) ) );
+       Assert.IsTrue(  reg.Register( new NamedClazz("Banana", 2) ) );
+       Assert.IsTrue(  reg.Register( new NamedClazz("APPLE", 3) ) );
+
+       Assert.AreEqual(3, reg.Count);
+
+       Assert.AreEqual(1, reg["Apple"].Data);
+       Assert.AreEqual(2, reg["Banana"].Data);
+       Assert.AreEqual(3, reg["APPLE"].Data);
+
+       Assert.IsFalse( reg.Unregister(new NamedClazz("I was never added before", 1)) );
+       Assert.AreEqual(3, reg.Count);
+
+       Assert.IsFalse( reg.Unregister(new NamedClazz("AppLE", 1)) );
+       Assert.AreEqual(3, reg.Count);
+       Assert.IsTrue( reg.Unregister(new NamedClazz("APPLE", 3)) );
+       Assert.AreEqual(2, reg.Count);
+       Assert.AreEqual(1, reg["Apple"].Data);
+       Assert.AreEqual(2, reg["Banana"].Data);
+       Assert.AreEqual(null, reg["APPLE"]);
+    }
+
+
     [TestCase]
     public void Registry_UnregisterByName()
     {
@@ -264,6 +315,36 @@ namespace NFX.NUnit.Collections
        Assert.AreEqual( 12345, reg["Apple"].Data);//got replaced before
        Assert.AreEqual( -234, reg["Peach"].Data);
 
+    }
+
+
+    [TestCase]
+    public void OrderedRegistry_GetOrRegister()
+    {
+       var reg = new OrderedRegistry<OrderedClazz>();
+       
+       bool wasAdded;
+       var obj1 = reg.GetOrRegister<object>("Apple", (_) => new OrderedClazz("Apple",  8,  1), null, out wasAdded);
+       Assert.AreEqual( 8, obj1.Order );
+       Assert.IsTrue( wasAdded );
+
+       var obj2 = reg.GetOrRegister<object>("Yabloko", (_) => new OrderedClazz("Yabloko",  3,  2), null, out wasAdded);
+       Assert.AreEqual( 3, obj2.Order );
+       Assert.IsTrue( wasAdded );
+
+       Assert.IsFalse( object.ReferenceEquals( obj1, obj2 ) );
+
+       var obj3 = reg.GetOrRegister<object>("Apple", (_) => new OrderedClazz("Apple",  123,  111), null, out wasAdded);
+       Assert.AreEqual( 8, obj3.Order );
+       Assert.IsFalse( wasAdded );
+
+       Assert.IsTrue( object.ReferenceEquals( obj1, obj3 ) );
+
+
+       var ordered = reg.OrderedValues.ToArray();
+       Assert.AreEqual(2, ordered.Length);
+       Assert.AreEqual("Yabloko", ordered[0].Name);
+       Assert.AreEqual("Apple", ordered[1].Name);
     }
 
 

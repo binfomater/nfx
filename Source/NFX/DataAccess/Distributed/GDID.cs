@@ -36,7 +36,7 @@ namespace NFX.DataAccess.Distributed
   /// (i.e. as UNSIGNED BIGINT in SQL datastores)
   /// </summary>
   [Serializable]
-  public struct GDID : IDataStoreKey, IComparable<GDID>, IEquatable<GDID>, IComparable, IJSONWritable, Cache.IULongHashProvider
+  public struct GDID : IDataStoreKey, IComparable<GDID>, IEquatable<GDID>, IComparable, IJSONWritable, IDistributedStableHashProvider
   {
         public const UInt64 AUTHORITY_MASK = 0xf000000000000000;
         public const UInt64 COUNTER_MASK   = 0x0fffffffffffffff;
@@ -74,9 +74,9 @@ namespace NFX.DataAccess.Distributed
           ID = (((UInt64)authority)<<60) | (counter & COUNTER_MASK);
         }
     
-        public GDID(byte[] bytes)
+        public GDID(byte[] bytes, int startIdx = 0)
         {
-          if (bytes==null ||  bytes.Length<sizeof(uint)+sizeof(ulong))
+          if (bytes==null || startIdx <0 || (bytes.Length-startIdx)<sizeof(uint)+sizeof(ulong))
             throw new DistributedDataAccessException(StringConsts.ARGUMENT_ERROR+"GDID.ctor(bytes==null<minsz)");
            
           Era = bytes.ReadBEUInt32();
@@ -125,7 +125,7 @@ namespace NFX.DataAccess.Distributed
  	       return (int)Era ^ (int)ID ^ (int)(ID >> 32);
         }
 
-        public ulong GetULongHash()
+        public ulong GetDistributedStableHash()
         {
          return  ((ulong)Era << 32) ^ ID;
         }

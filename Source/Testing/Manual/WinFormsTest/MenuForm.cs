@@ -76,6 +76,12 @@ namespace WinFormsTest
       new PileForm().Show();
     }
 
+    
+    private void btnPDF_Click(object sender, EventArgs e)
+    {
+     new PdfTestForm().Show();
+    }
+
     private byte[] getGarbageBuffer(int bufferLength)
     {
       var buf = new byte[bufferLength];
@@ -165,6 +171,16 @@ Performance
              ops, time2, ops / (time2/ 1000d),
              time1 / (double)time2
            ));
+    }
+
+    private void btnBSON_Click(object sender, EventArgs e)
+    {
+      new BSONTestForm().Show();
+    }
+
+    private void btnMONGOCONNECTOR_Click(object sender, EventArgs e)
+    {
+      new MongoConnectorForm().Show();
     }
   }
 }

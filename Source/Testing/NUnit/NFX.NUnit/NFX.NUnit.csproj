@@ -98,6 +98,8 @@
     <Compile Include="Config\ValueAccessors.cs" />
     <Compile Include="Config\FactoryUtilsTests.cs" />
     <Compile Include="Config\ProviderLoads.cs" />
+    <Compile Include="DataAccess\GDIDTest.cs" />
+    <Compile Include="DataAccess\SchemaEQU.cs" />
     <Compile Include="FIDTests.cs" />
     <Compile Include="DataAccess\FieldAttrPrototyping.cs" />
     <Compile Include="ExtRndGenTests.cs" />
@@ -137,6 +139,9 @@
     <Compile Include="OS\NetUtilsTest.cs" />
     <Compile Include="Parsing\NatTxtGen.cs" />
     <Compile Include="Security\PuzzleKeypadTests.cs" />
+    <Compile Include="Serialization\BSON.cs" />
+    <Compile Include="Serialization\RowConverterTest.cs" />
+    <Compile Include="Serialization\SlimObjectGraph.cs" />
     <Compile Include="Serialization\SlimBatchTypeMode.cs" />
     <Compile Include="Serialization\JSONDynamism.cs" />
     <Compile Include="Serialization\Slim2.cs" />
@@ -186,6 +191,7 @@
     <Compile Include="Serialization\PODSlim.cs" />
     <Compile Include="Serialization\TestObjects.cs" />
     <Compile Include="Serialization\Slim.cs" />
+    <Compile Include="TaskUtilsTest.cs" />
     <Compile Include="Templatization\TextCSTemplateCompilerTests.cs" />
     <Compile Include="Templatization\TeztTemplate.cs" />
     <Compile Include="TestLog.cs" />

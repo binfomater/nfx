@@ -1240,6 +1240,56 @@ namespace NFX.NUnit.Serialization
           }
         }
 
+                     public class WithoutCTORSkip
+                     {
+                     
+                        public WithoutCTORSkip() 
+                        {
+                          MSG = "Was CALLED";
+                        }
+
+                        [NonSerialized]
+                        public string MSG;
+                     }
+
+                     public class WithCTORSkip : WithoutCTORSkip
+                     {
+                        [SlimDeserializationCtorSkip]
+                        public WithCTORSkip() : base()
+                        {
+                          
+                        }
+                     }
+
+
+        [TestCase]
+        public void CtorSkip()
+        {
+          using(var ms = new MemoryStream())
+          {           
+            var without = new WithoutCTORSkip();
+            var with = new WithCTORSkip();
+            
+
+            var s = new SlimSerializer(SlimFormat.Instance);
+             
+            s.Serialize(ms, with);
+            s.Serialize(ms, without);
+            ms.Seek(0, SeekOrigin.Begin);
+
+            
+            var with2 = s.Deserialize(ms) as WithCTORSkip;
+            var without2 = s.Deserialize(ms) as WithoutCTORSkip;
+
+            Assert.IsNotNull( with2 );
+            Assert.IsNotNull( without2 );
+
+            Assert.AreEqual(null, with2.MSG);
+            Assert.AreEqual("Was CALLED", without2.MSG);
+          }
+        }
+
+
 
 
         [TestCase]
@@ -1631,6 +1681,44 @@ namespace NFX.NUnit.Serialization
             Assert.AreEqual(true,  o2.Array2[3]);
           }
         }
+
+
+
+        [TestCase(10, 512000)]
+        [TestCase(10, 1512000)]
+        public void VeryLargeStrings(int cnt, int sz)
+        {
+           var data = new List<string>();
+
+           for(var i=0; i<cnt; i++)
+           {
+             var sb = new StringBuilder(sz);
+             while(sb.Length<sz)
+              sb.Append( NFX.Parsing.NaturalTextGenerator.Generate(50));
+
+             data.Add( sb.ToString());
+           }
+
+           using(var ms = new MemoryStream())
+           {  
+             var s = new SlimSerializer();
+
+             s.Serialize(ms, data);
+
+             Console.WriteLine("Serialized bytes: "+ ms.Position);
+             Console.WriteLine("Serialized strings: "+ data.Count);
+
+             ms.Position = 0;
+
+             var got = s.Deserialize(ms) as List<string>;
+
+             Console.WriteLine("DeSerialized bytes: "+ ms.Position);
+             Console.WriteLine("DeSerialized strings: "+ got.Count);
+
+             Assert.IsTrue( data.SequenceEqual(got) );
+           }
+        }
+
 
                      private class binwrap
                      {

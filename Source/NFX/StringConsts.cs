@@ -52,6 +52,8 @@ namespace NFX
         public const string ARGUMENT_ERROR =
             "Argument error: ";
 
+        public const string CANNOT_RETURN_NULL_ERROR = "'next' function cannot return null. ";
+
         public const string HTTP_OPERATION_ERROR = "HTTP[S] error: ";
 
         public const string FILE_NOT_FOUND_ERROR = "File not found: ";
@@ -495,17 +497,13 @@ namespace NFX
         "Stream EOF before operation could complete: ";
 
 
-    public const string SLIM_READ_BYTE_BUF_MAX_SIZE_ERROR =
-        "Slim reader could not read requested buffer of {0} bytes as it exceeds the maximum limit of {1} bytes'";
+    public const string SLIM_READ_X_ARRAY_MAX_SIZE_ERROR =
+        "Slim reader could not read requested array of {0} {1} as it exceeds the maximum limit of {2} bytes'";
 
-    public const string SLIM_WRITE_BYTE_BUF_MAX_SIZE_ERROR =
-        "Slim writer could not write requested buffer of {0} bytes as it exceeds the maximum limit of {1} bytes'";
+    public const string SLIM_WRITE_X_ARRAY_MAX_SIZE_ERROR =
+        "Slim writer could not write requested array of {0} {1} as it exceeds the maximum limit of {2} bytes'";
 
-    public const string SLIM_READ_STRING_ARRAY_MAX_SIZE_ERROR =
-        "Slim reader could not read requested array of {0} strings as it exceeds the maximum limit of {1} strings'";
 
-    public const string SLIM_WRITE_STRING_ARRAY_MAX_SIZE_ERROR =
-        "Slim writer could not write requested array of {0} strings as it exceeds the maximum limit of {1} strings'";
 
     public const string SLIM_SERIALIZATION_EXCEPTION_ERROR =
         "Exception in SlimSerializer.Serialize():  ";
@@ -911,6 +909,8 @@ namespace NFX
       "Local installation can not install a package '{0}' from the install set. The package does not contain a manifest file '{1}' in its root";
 
 
+    public const string FS_DUPLICATE_NAME_ERROR = "Can not have file system instance of type '{0}' with the name '{1}' as this name is already registered. ";
+
     public const string FS_SESSION_BAD_PARAMS_ERROR = 
       "Can not create an instance of file system session '{0}'. Make sure that suitable derivative of FileSystemSessionConnectParams is passed for the particular file system";
 
@@ -945,7 +945,7 @@ namespace NFX
     
     public const string PILE_CRAWL_INTERNAL_SEGMENT_CORRUPTION_ERROR =  "Pile segment crawl internal error: chunk flag corrupted at address {0}";        
 
-    public const string PILE_OUT_OF_SPACE_ERROR =  "Pile is out of allowed space of {0:n} max bytes : {1} max segments @ {2:n} bytes/segment";        
+    public const string PILE_OUT_OF_SPACE_ERROR =  "Pile is out of allowed space of {0:n} max bytes, {1} max segments @ {2:n} bytes/segment";        
 
     public const string PILE_OBJECT_LARGER_SEGMENT_ERROR =  "Pile could not put object of {0} bytes as this size exceeds the size of a segment";        
    
@@ -973,6 +973,79 @@ namespace NFX
     public const string PILE_CACHE_TBL_KEYCOMPARER_MISMATCH_ERROR = 
       "Key comparer mismatch for pile cache table '{0}'. Existing: '{1}' Requested: '{2}'";          
      
+
+    public const string PDF_UNIT_INCONSISTENCY_ERROR =
+        "PDF Unit '{0}' is inconsistently defined";
+
+    public const string PDF_UNIT_DOESNOTEXIST_ERROR =
+        "PDF Unit '{0}' does not exist";
+     
+    public const string PDF_COLOR_DOESNOTEXIST_ERROR =
+        "PDF Color '{0}' does not exist";
+             
+    public const string PDF_COLOR_INCONSISTENCY_ERROR =
+        "PDF Color '{0}' is inconsistently defined"; 
+  
+  
+             
+    public const string BSON_DOCUMENT_SIZE_EXCEEDED_ERROR =
+        "Size '{0}' exceeds BSON default document size {1}";
+
+    public const string BSON_ELEMENT_OBJECT_VALUE_SET_ERROR =
+        "Can not set the '{0}' value of BSON element '{1}'. Error: {2}";
+    
+    public const string BSON_READ_PREMATURE_EOF_ERROR =
+        "Premature EOF while doing '{0}' over BSON stream";
+                   
+    public const string BSON_NAMED_ELEMENT_ADDED_ERROR =
+        "The element with name '{0}' has already been added";
+
+    public const string BSON_TYPE_NOT_SUPORTED_ERROR =
+        "BSON type '{0}' is not supported. BSON source is likely corrupted";
+
+    public const string BSON_DOCUMENT_RECURSION_ERROR =
+        "BSONDocument recursion detected";
+
+    public const string BSON_ARRAY_ELM_NAME_ERROR =
+        "BSONElement.Name can not be accessed because it is an array element. Check IsArrayElement";
+
+    public const string BSON_TEMPLATE_COMPILE_ERROR =
+        "BSONDocument template compilation error: {0}. Template source: ' {1} '";
+   
+    public const string BSON_ARRAY_ELM_DOC_ERROR =
+        "BSONElement '{0}' is an array element and can not be used in document directly";
+     
+    public const string BSON_OBJECTID_LENGTH_ERROR =
+        "Byte array length must be equal to 12";
+
+    public const string BSON_THREE_BYTES_UINT_ERROR =
+        "The value of {0} should be less than 2^24 to be correctly encoded as 3-bytes";  
+
+    public const string BSON_UNEXPECTED_END_OF_STRING_ERROR =
+        "Unexpected end of string. Expected: 0x00"; 
+
+    public const string BSON_INCORRECT_STRING_LENGTH_ERROR =
+        "BSON source is corrupted. String length '{0}' should be positive integer";
+
+    public const string BSON_READ_BOOLEAN_ERROR =
+        "BSON source is corrupted. Unexpected boolean value '{0}'"; 
+
+    public const string BSON_EOD_ERROR =
+        "BSON source is corrupted. Incorrect end of document/array";
+
+    public const string CLR_BSON_CONVERSION_TYPE_NOT_SUPPORTED_ERROR =
+        "CLR type '{0}' conversion into BSON is not supported";
+
+    public const string CLR_BSON_CONVERSION_REFERENCE_CYCLE_ERROR =
+        "CLR value of type '{0}' could not be converted into BSON as there is a reference cycle";
+
+    public const string DECIMAL_OUT_OF_RANGE_ERROR =
+        "Decimal value of {0} is outside of to-int64 convertable range of {1}..{2}";
+
+    public const string BUFFER_LONGER_THAN_ALLOWED_ERROR =
+        "Byte[] buffer has a length of {0} bytes which is over the allowed maximum of {1} bytes";
+
+    public const string GDID_BUFFER_ERROR =
+        "Error converting GDID data buffer: {0}";
   }
 }
-

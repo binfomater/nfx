@@ -43,7 +43,7 @@ namespace NFX.ApplicationModel.Volatile
   /// This class is thread-safe unless specified otherwise on a property/method level 
   /// </summary>
   [ConfigMacroContext]
-  public class ObjectStoreService : Service, IObjectStoreImplementation
+  public class ObjectStoreService : ServiceWithInstrumentationBase<object>, IObjectStoreImplementation
   {
     #region CONSTS
 
@@ -135,25 +135,11 @@ namespace NFX.ApplicationModel.Volatile
         /// </summary>
         [Config(Default=false)]
         [ExternalParameter(CoreConsts.EXT_PARAM_GROUP_OBJSTORE, CoreConsts.EXT_PARAM_GROUP_INSTRUMENTATION)] 
-        public virtual bool InstrumentationEnabled
+        public override bool InstrumentationEnabled
         {
           get { return m_InstrumentationEnabled;}
           set { m_InstrumentationEnabled = value;}
         }
-
-        /// <summary>
-        /// Returns named parameters that can be used to control this component
-        /// </summary>
-        public IEnumerable<KeyValuePair<string, Type>> ExternalParameters{ get { return ExternalParameterAttribute.GetParameters(this); } }
-
-        /// <summary>
-        /// Returns named parameters that can be used to control this component
-        /// </summary>
-        public IEnumerable<KeyValuePair<string, Type>> ExternalParametersForGroups(params string[] groups)
-        { 
-          return ExternalParameterAttribute.GetParameters(this, groups); 
-        }
-
 
         /// <summary>
         /// Specifies how many buckets objects are kept in. Increasing this number improves thread concurrency
@@ -406,25 +392,6 @@ namespace NFX.ApplicationModel.Volatile
       return true;
     }
 
-
-          /// <summary>
-          /// Gets external parameter value returning true if parameter was found
-          /// </summary>
-          public bool ExternalGetParameter(string name, out object value, params string[] groups)
-          {
-              return ExternalParameterAttribute.GetParameter(this, name, out value, groups);
-          }
-          
-          /// <summary>
-          /// Sets external parameter value returning true if parameter was found and set
-          /// </summary>
-          public bool ExternalSetParameter(string name, object value, params string[] groups)
-          {
-            return ExternalParameterAttribute.SetParameter(this, name, value, groups);
-          }
-
-
-
     #endregion
 
 
@@ -576,7 +543,7 @@ namespace NFX.ApplicationModel.Volatile
 
                 private Bucket getBucket(Guid key)
                 {
-                  var idx = Math.Abs(key.GetHashCode() % m_BucketCount);   //todo IMPORTANT!!!!! replace with more efficient Bucket determination call from NFX.IntMath
+                  var idx = (key.GetHashCode() & CoreConsts.ABS_HASH_MASK) % m_BucketCount;
                   return m_Buckets[idx];
                 }
 

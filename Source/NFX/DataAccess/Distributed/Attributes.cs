@@ -19,38 +19,48 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using NFX.Environment;
+
 namespace NFX.DataAccess.Distributed
 {
     
     /// <summary>
-    /// Specifies modes of wrapping handling of parcel payload.
-    /// This setting controls whether parcel's payload is sub-serialized into inner byte[].
-    /// When a parcel contains simple data payload (i.e. typed row), then wrapping its content in extra byte[] would
-    ///  cause extra overhead in which case NotWrapped mode should be used (default).
+    /// Provides information about targetname->table name, sequence name(and possibly other) mappings
     /// </summary>
-    public enum ParcelPayloadWrappingMode
-    { 
-      /// <summary>
-      /// The parcel payload will be stored as an object graph which will be completely serialized instead of byte[].
-      /// This option should be used for parcels that have simple structure without many object ref fields and without nesting
-      ///  because wrapping parcel content in inner byte[] would cause extra overhead due to simple structure of payload.
-      ///  This is the default setting which is applicable to most common cases
-      /// </summary>
-      NotWrapped = 0, 
+    public struct TargetTableMapping : INamed
+    {
+      public const string CONFIG_GDID_SEQUENCE_NAME_ATTR = "gdid-sequence";
+
+      public TargetTableMapping(IConfigSectionNode node)
+      {
+        m_Name = node.Name;
+        m_TableName = node.Value;
+        m_GDIDSequenceName = node.AttrByName(CONFIG_GDID_SEQUENCE_NAME_ATTR).Value;
+      }
       
-      /// <summary>
-      /// The parcel payload will be wrapped into byte[] for (re-)transmission efficency.
-      /// Use this setting when parcel contains large object graph with nesting or many reference fields 
-      /// </summary>
-      Wrapped 
+      private string m_Name;
+      private string m_TableName;
+      private string m_GDIDSequenceName;
+      //...more props in future
+
+      public string Name { get { return m_Name;} }
+      public string TableName { get { return m_TableName;} }
+      public string GDIDSequenceName { get { return m_GDIDSequenceName;} }
     }
+
     
     
     /// <summary>
-    /// Decorates Pacel-derivative classes specifying distributed data store options
+    /// Decorates Pacel-derivative classes specifying distributed data store options.
+    /// Unlike the CRUD family of metadata attributes this attributed is NOT TARGETABLE on purpose
+    /// beacause different sharding definitions would have affected the properties of the parcel which could have been
+    /// very complex to maintain/account for. So, every parcel has ONLY ONE set opf metadata definition.
+    /// In case when different parcel definitions needed a new parcel type should be created which can reuse the payload - this is much 
+    ///  easier to implement (two parcels) than targeting within the same parcel.
+    /// Table mappings are targetable
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
-    public sealed class DataParcelAttribute : Attribute, IParcelCachePolicy
+    public sealed class DataParcelAttribute : Attribute, ICachePolicy
     {
 
         /// <summary>
@@ -97,15 +107,16 @@ namespace NFX.DataAccess.Distributed
                              
                              bool supportsMerge = false,
                              Type shardingParcel = null,
-                             ParcelPayloadWrappingMode wrappingMode = ParcelPayloadWrappingMode.NotWrapped,
                              string replicationChannel = null,
                              string cacheTableName = null,
                              int cacheWriteMaxAgeSec = -1,
                              int cacheReadMaxAgeSec = -1,
-                             int cachePriority = -1)
+                             int cachePriority = -1,
+                             string targetTableMappings = null)
         {
             if (schemaName.IsNullOrWhiteSpace() || 
-                areaName.IsNullOrWhiteSpace())
+                areaName.IsNullOrWhiteSpace()
+                )
              throw new DistributedDataAccessException(StringConsts.ARGUMENT_ERROR + GetType().FullName+".ctor(schemaName|areaName=null|empty)");    
 
             SchemaName = schemaName;
@@ -117,14 +128,26 @@ namespace NFX.DataAccess.Distributed
             
             SupportsMerge = supportsMerge;
             ShardingParcel = shardingParcel;
-            PayloadWrappingMode = wrappingMode;
             ReplicationChannel = replicationChannel;
             CacheTableName = cacheTableName;
             CacheWriteMaxAgeSec = cacheWriteMaxAgeSec <0 ? (int?)null : cacheWriteMaxAgeSec;
             CacheReadMaxAgeSec  = cacheReadMaxAgeSec  <0 ? (int?)null : cacheReadMaxAgeSec;
             CachePriority       = cachePriority       <0 ? (int?)null : cachePriority;    
+
+            if (targetTableMappings.IsNotNullOrWhiteSpace())
+            {
+               var data = ("mappings{"+targetTableMappings+"}").AsLaconicConfig();
+               if (data==null) data = targetTableMappings.AsLaconicConfig();
+               if (data==null)
+                throw new DistributedDataAccessException(StringConsts.ARGUMENT_ERROR + GetType().FullName+".ctor(targetTableMappings='"+targetTableMappings+"' Laconic parse error)");
+              
+               foreach(var cn in data.Children)
+                m_TableMappings.Register( new TargetTableMapping( cn ) ); 
+            }
         }
        
+
+        private Registry<TargetTableMapping> m_TableMappings = new Registry<TargetTableMapping>();
 
         /// <summary>
         /// Returns true if parcel supports merge with other versions. 
@@ -166,15 +189,6 @@ namespace NFX.DataAccess.Distributed
 
 
         /// <summary>
-        /// Specifies modes of wrapping handling of parcel payload.
-        /// This setting controls whether parcel's payload is sub-serialized into inner byte[].
-        /// When a parcel contains simple typed data payload (i.e. typedrow), then wrapping its content in extra byte[] would
-        ///  cause extra overhead in which case NotWrapped mode should be used (default).
-        /// </summary>
-        public ParcelPayloadWrappingMode PayloadWrappingMode { get; private set;}
-
-
-        /// <summary>
         /// Specifies the name of the replication channel used to pump data between servers/data centers/locations
         /// </summary>
         public string ReplicationChannel { get; private set;}
@@ -210,5 +224,10 @@ namespace NFX.DataAccess.Distributed
         /// This property can not be set on the attribute level and always returns null
         /// </summary>
         public DateTime? CacheAbsoluteExpirationUTC { get {return null; }}
+
+        /// <summary>
+        /// Returns mappins of target->table attributes. Pass in [DataParcel(targetTableMappings = "targetName1=tableName1{atr1=v1 atr2=v2...} targetName2=tableName2{atr1=v1 atr2=v2...}...")];
+        /// </summary>
+        public IRegistry<TargetTableMapping> TableMappings { get{ return m_TableMappings;}}
     }
 }

@@ -39,12 +39,12 @@ namespace WinFormsTest
 {
     public partial class SerializerForm2 : Form
     {
-       const int CNT = 50000;//100000;//10000;
+       const int CNT = 750000;//50000;//100000;//10000;
        
         public SerializerForm2()
         {
             InitializeComponent();
-
+        /*
 
             {
 
@@ -102,19 +102,32 @@ namespace WinFormsTest
 
             }
 
-           }
+           }     */
         }
 
 
-        Library data = new Library();
+        //long[] data = 
+        //new long[]
+        //{
+        //  1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,
+        //  1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,
+        //  1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,
+        //  1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,
+        //  1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0
+        //};
+        
+      // Library data = new Library();
        //Perzon data = new Perzon
        //{
        //   FirstName = "Alex",
        //   LastName = "Perzonov",
        //   Age1 = 10,
        //   Age2=20,
-       //   Age3=99
+       //   Age3=99,
+       //  //  Parent = new Perzon{ LastName="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Salary1 = 3122d}
        //};
+
+       TradingRec data = TradingRec.Build();
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -122,7 +135,7 @@ namespace WinFormsTest
 
             var ms = new MemoryStream();
 
-            var slim = new SlimSerializer(new TypeRegistry(new Type[]{typeof(Library), typeof(Book), typeof(Perzon), typeof(List<Book>), typeof(object[]), typeof(string[])}, TypeRegistry.CommonCollectionTypes));
+            var slim = new SlimSerializer(new TypeRegistry(new Type[]{typeof(TradingRec), typeof(Library), typeof(Book), typeof(Perzon), typeof(List<Book>), typeof(object[]), typeof(string[])}, TypeRegistry.CommonCollectionTypes));
             slim.TypeMode = TypeRegistryMode.Batch;
 
             var w = Stopwatch.StartNew();
@@ -475,6 +488,115 @@ namespace WinFormsTest
 
           }
 
+          private void btnObjRef_Click(object sender, EventArgs e)
+          {
+            const int CNT = 8;
+            const int SEARCHES = 8000000;
+
+            
+
+
+            var rnds = new int[800];
+            for(var i=0; i<rnds.Length; i++)
+              rnds[i] = ExternalRandomGenerator.Instance.NextScaledRandomInteger(CNT / 2, CNT-1);
+
+            var lst = new Perzon[CNT];
+            var dict = new Dictionary<object, int>(128, ReferenceEqualityComparer<object>.Instance);
+            for(var i=0; i<lst.Length; i++)
+            {
+              var person = new Perzon();
+              lst[i] = (person);
+              dict.Add(person, i);
+            }
+
+            var found1 = 0;
+            var found2 = 0;
+
+            System.Threading.Thread.SpinWait(250333000);
+
+            var sw = Stopwatch.StartNew();
+            for(var j=0; j<SEARCHES; j++)
+            {
+             var key = this;//WORST CASe, key is never found //lst[rnds[j%rnds.Length]];
+             for(var i=0; i<lst.Length; i++)
+              if ( object.ReferenceEquals(key, lst[i]))
+              {
+                found1++;
+                break;//FOUND!!!
+              }
+            }  
+
+            var time1 = sw.ElapsedMilliseconds;
+
+            sw.Restart();
+           
+           for(var j=0; j<SEARCHES; j++)
+            {
+             var key = this;//WORST CASe, key is never found //lst[rnds[j%rnds.Length]];
+             int idx;
+             if (dict.TryGetValue(key, out idx)) found2++; //FOUND!
+            } 
+
+            var time2 = sw.ElapsedMilliseconds;
+
+            var summary=
+@"
+   Elements: {0}  Searched: {1}
+   -------------------------------------
+   Linear search found {2} in {3} ms at {4:n2} ops/sec
+   Dict search found   {5} in {6} ms {7:n2} ops/sec
+
+
+".Args(
+ CNT, SEARCHES,
+ found1, time1, SEARCHES / (time1 / 1000d),
+ found2, time2, SEARCHES / (time2 / 1000d)
+);
+     MessageBox.Show( summary );
+
+
+          }
+
+          private void btnABsSpeed_Click(object sender, EventArgs e)
+          {
+             System.Threading.Thread.SpinWait(100000000);
+             const int CNT = 100000000;
+             var sw = Stopwatch.StartNew();
+             
+             long sum = 0;
+             for(var i=0; i<CNT; i++)
+               sum += (Math.Abs(i) % 3);
+
+             var t1 = sw.ElapsedMilliseconds;
+             sw.Restart();
+
+             long sum2 = 0;
+             for(var i=0; i<CNT; i++)
+               sum2 += ((i & 0x7fffffff) % 3);
+
+             var t2 = sw.ElapsedMilliseconds;
+             sw.Restart();
+
+             long sum3 = 0;
+             for(var i=0; i<CNT; i++)
+               sum3 += ((i < 0? -i : i) % 3);
+             var t3 = sw.ElapsedMilliseconds;
+
+             var msg =
+@"
+Did {0}:
+--------------------------------------
+Math.Abs() {1:n0} ms at @ {2:n0} ops/sec
+Bit &&     {3:n0} ms at @ {4:n0} ops/sec
+IF         {5:n0} ms at @ {6:n0} ops/sec".Args(CNT, 
+                  t1, CNT / (t1 / 1000d),
+                  t2, CNT / (t2 / 1000d),
+                  t3, CNT / (t3 / 1000d)  );
+
+            MessageBox.Show( msg );
+
+          }
+
 
 
 
@@ -567,13 +689,40 @@ namespace WinFormsTest
       [DataMember]public List<string> Names1; 
       [DataMember]public List<string> Names2;        
       
-      [DataMember]public int O1 = 1;
-      [DataMember]public bool O2 = true;
-      [DataMember]public DateTime O3 = App.LocalizedTime;
-      [DataMember]public TimeSpan O4 = TimeSpan.FromHours(12);
-      [DataMember]public decimal O5 = 123.23M;
+      [DataMember]public int O1;// = 1;
+      [DataMember]public bool O2;// = true;
+      [DataMember]public DateTime O3;// = DateTime.UtcNow;
+      [DataMember]public TimeSpan O4;// = TimeSpan.FromHours(12);
+      [DataMember]public decimal O5;// = 123.23M;
   
     }
+
+
+  
+    [DataContract]
+    [Serializable] public class TradingRec
+    {
+        [DataMember] public string Symbol;
+        [DataMember] public int Volume;
+        [DataMember] public long Bet;
+        [DataMember] public long Price;
+
+         public static TradingRec Build()
+         {
+           return new TradingRec
+           {
+            Symbol = NFX.Parsing.NaturalTextGenerator.GenerateFirstName(),
+            Volume = ExternalRandomGenerator.Instance.NextScaledRandomInteger(-25000, 25000),
+            Bet = ExternalRandomGenerator.Instance.NextScaledRandomInteger(-250000, 250000) * 10000L,
+            Price = ExternalRandomGenerator.Instance.NextScaledRandomInteger(0, 1000000) * 10000L
+           };
+         }
+    } 
+
+
+
+
+
 
    [Serializable, DataContract]
 public partial class Game

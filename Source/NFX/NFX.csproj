@@ -108,6 +108,7 @@
     <Compile Include="ApplicationModel\Volatile\ObjectStoreEntry.cs" />
     <Compile Include="ApplicationModel\Volatile\ObjectStoreProvider.cs" />
     <Compile Include="ApplicationModel\Volatile\ObjectStoreService.cs" />
+    <Compile Include="Collections\NamedInterlocked.cs" />
     <Compile Include="CoreConsts.cs" />
     <Compile Include="ExternalParameterAttribute.cs" />
     <Compile Include="CodeAnalysis\Source\StreamSource.cs" />
@@ -131,7 +132,7 @@
     <Compile Include="DataAccess\CRUD\FormModel.cs" />
     <Compile Include="DataAccess\Distributed\Attributes.cs" />
     <Compile Include="DataAccess\Distributed\Command.cs" />
-    <Compile Include="DataAccess\Distributed\IShardingIDProvider.cs" />
+    <Compile Include="DataAccess\Distributed\IShardingPointerProvider.cs" />
     <Compile Include="DataAccess\Distributed\Exceptions.cs" />
     <Compile Include="DataAccess\Distributed\GDID.cs" />
     <Compile Include="DataAccess\Distributed\StoreIntfs.cs" />
@@ -189,11 +190,13 @@
     <Compile Include="IO\ErrorHandling\GaloisPolynomial.cs" />
     <Compile Include="IO\ErrorHandling\ReedSolomonEncoder.cs" />
     <Compile Include="IO\FileSystem\FileSystemDirectory.cs" />
+    <Compile Include="IO\FileSystem\FileSystemException.cs" />
     <Compile Include="IO\FileSystem\FileSystemFile.cs" />
     <Compile Include="IO\FileSystem\FileSystemCapabilities.cs" />
     <Compile Include="IO\FileSystem\FileSystemSessionItem.cs" />
     <Compile Include="IO\FileSystem\FileSystem.cs" />
     <Compile Include="IO\FileSystem\FileSystemSession.cs" />
+    <Compile Include="IO\FileSystem\FileSystemStarter.cs" />
     <Compile Include="IO\FileSystem\FileSystemStream.cs" />
     <Compile Include="IO\FileSystem\Intfs.cs" />
     <Compile Include="IO\FileSystem\Local\LocalFileSystem.cs" />
@@ -212,6 +215,43 @@
     <Compile Include="IO\NonClosingStreamWrap.cs" />
     <Compile Include="Log\Instrumentation\Gauges.cs" />
     <Compile Include="Media\Graphics\DrawingOutput.cs" />
+    <Compile Include="Media\PDF\Constants.cs" />
+    <Compile Include="Media\PDF\DocumentModel\IPdfObject.cs" />
+    <Compile Include="Media\PDF\DocumentModel\IPdfResource.cs" />
+    <Compile Include="Media\PDF\DocumentModel\IPdfWritable.cs" />
+    <Compile Include="Media\PDF\DocumentModel\IPdfXObject.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfDocument.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfFont.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfHeader.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfInfo.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfMeta.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfObject.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfOutlines.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfPage.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfPageTree.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfRoot.cs" />
+    <Compile Include="Media\PDF\DocumentModel\PdfTrailer.cs" />
+    <Compile Include="Media\PDF\Elements\BezierPrimitive.cs" />
+    <Compile Include="Media\PDF\Elements\ImageElement.cs" />
+    <Compile Include="Media\PDF\Elements\LinePrimitive.cs" />
+    <Compile Include="Media\PDF\Elements\PathElement.cs" />
+    <Compile Include="Media\PDF\Elements\PathPrimitive.cs" />
+    <Compile Include="Media\PDF\Elements\PdfElement.cs" />
+    <Compile Include="Media\PDF\Elements\RectangleElement.cs" />
+    <Compile Include="Media\PDF\Elements\TextElement.cs" />
+    <Compile Include="Media\PDF\Exceptions.cs" />
+    <Compile Include="Media\PDF\ObjectRepository.cs" />
+    <Compile Include="Media\PDF\PdfWriter.cs" />
+    <Compile Include="Media\PDF\ResourceRepository.cs" />
+    <Compile Include="Media\PDF\Styling\Enums.cs" />
+    <Compile Include="Media\PDF\Styling\PdfColor.cs" />
+    <Compile Include="Media\PDF\Styling\PdfDrawStyle.cs" />
+    <Compile Include="Media\PDF\Styling\PdfPageSize.cs" />
+    <Compile Include="Media\PDF\Styling\PdfSize.cs" />
+    <Compile Include="Media\PDF\Styling\PdfUnit.cs" />
+    <Compile Include="Media\PDF\Text\PdfTrivialEncoding.cs" />
+    <Compile Include="Media\PDF\Text\PdfUnicodeEncoding.cs" />
+    <Compile Include="Media\PDF\Text\TextAdapter.cs" />
     <Compile Include="Media\TagCodes\QR\QRDataNCorrection.cs" />
     <Compile Include="Media\TagCodes\QR\QRImageRenderer.cs" />
     <Compile Include="Media\TagCodes\QR\QRMatrix.cs" />
@@ -260,6 +300,7 @@
     <Compile Include="Erlang\ErlInputStream.cs" />
     <Compile Include="OS\Computer.cs" />
     <Compile Include="OS\Instrumentation\Gauges.cs" />
+    <Compile Include="OS\ManyReadersOneWriterSynchronizer.cs" />
     <Compile Include="OS\NetworkUtils.cs" />
     <Compile Include="Parsing\NaturalTextGenerator.cs" />
     <Compile Include="FID.cs" />
@@ -267,6 +308,14 @@
     <Compile Include="Security\GDIDCredentials.cs" />
     <Compile Include="Security\PasswordUtils.cs" />
     <Compile Include="Security\SocialNetTokenCredentials.cs" />
+    <Compile Include="Serialization\BSON\BinUtils.cs" />
+    <Compile Include="Serialization\BSON\BSONDocument.cs" />
+    <Compile Include="Serialization\BSON\BSONElement.cs" />
+    <Compile Include="Serialization\BSON\Elements.cs" />
+    <Compile Include="Serialization\BSON\Enums.cs" />
+    <Compile Include="Serialization\BSON\Exceptions.cs" />
+    <Compile Include="Serialization\BSON\BSONSpecialValues.cs" />
+    <Compile Include="Serialization\BSON\RowConverter.cs" />
     <Compile Include="Serialization\JSON\JSONExtensions.cs" />
     <Compile Include="Serialization\JSON\JSONReadableWritableIntfs.cs" />
     <Compile Include="CodeAnalysis\JSON\JSONPatternMatchAttribute.cs" />
@@ -528,8 +577,10 @@
     <Compile Include="Serialization\POD\PortableObjectDocument.cs" />
     <Compile Include="Serialization\SerializationUtils.cs" />
     <Compile Include="Serialization\Slim\Arrays.cs" />
+    <Compile Include="Serialization\Slim\Attributes.cs" />
     <Compile Include="Serialization\Slim\ISlimSerializer.cs" />
     <Compile Include="Serialization\Slim\PODSlimSerializer.cs" />
+    <Compile Include="Serialization\Slim\RefPool.cs" />
     <Compile Include="Serialization\Slim\SlimSerializer.cs" />
     <Compile Include="IO\SlimWriter.cs" />
     <Compile Include="Serialization\Slim\Exceptions.cs" />
@@ -539,12 +590,15 @@
     <Compile Include="Serialization\NFXSerializationException.cs" />
     <Compile Include="ServiceModel\CompositeServiceHost.cs" />
     <Compile Include="ServiceModel\Enums.cs" />
+    <Compile Include="ServiceModel\IService.cs" />
     <Compile Include="ServiceModel\Service.cs" />
+    <Compile Include="ServiceModel\ServiceWithInstrumentationBase.cs" />
     <Compile Include="ServiceModel\WorkItem.cs" />
     <Compile Include="ServiceModel\WorkItemAggregatorService.cs" />
     <Compile Include="ServiceModel\WorkQueue.cs" />
     <Compile Include="StringConsts.cs" />
     <Compile Include="StringValueConversion.cs" />
+    <Compile Include="TaskUtils.cs" />
     <Compile Include="Templatization\Sources.cs" />
     <Compile Include="Templatization\IRenderingTarget.cs" />
     <Compile Include="Templatization\Exceptions.cs" />
@@ -598,7 +652,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Media\DocModel\" />
-    <Folder Include="Media\PDF\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="BUILD_INFO.txt" />

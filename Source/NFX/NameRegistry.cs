@@ -26,7 +26,8 @@ namespace NFX
     /// <summary>
     /// Denotes an entity that has a Name property. 
     /// This interface is primarily used with Registry[INamed] class that allows for 
-    ///  string-based addressing (getting instances by object instance name)
+    ///  string-based addressing (getting instances by object instance name).
+    /// The names are ideal for many system functions, like naming components in configs and admin tools 
     /// </summary>
     public interface INamed
     {
@@ -34,7 +35,7 @@ namespace NFX
     }
 
     /// <summary>
-    /// Denotes an entity that has an Order property
+    /// Denotes an entity that has a relative Order property within a collection of entities
     /// </summary>
     public interface IOrdered
     {
@@ -57,6 +58,11 @@ namespace NFX
         T this[string name] { get;}
 
         /// <summary>
+        /// Returns true if the instance differentiates names by case
+        /// </summary>
+        bool IsCaseSensitive{ get;}
+
+        /// <summary>
         /// Returns true if when this registry contains the specified name
         /// </summary>
         bool ContainsName(string name);
@@ -71,69 +77,71 @@ namespace NFX
     
     
     /// <summary>
-    /// Represents a dictionary of string-named objects. Name search is case-insensitive
+    /// Internal dictionary of string-named objects
     /// </summary>
     [Serializable]
-    internal class RegistryDictionary<T> : Dictionary<string, T> , IRegistry<T> where T : INamed
+    internal class RegistryDictionary<T> : Dictionary<string, T> where T : INamed
     {
-       public RegistryDictionary() : base(StringComparer.OrdinalIgnoreCase)
+       public RegistryDictionary(bool caseSensitive) : base(caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase)
        {
-
        }
        
-       public RegistryDictionary(IDictionary<string, T> other) : base(other, StringComparer.OrdinalIgnoreCase)
+       public RegistryDictionary(bool caseSensitive, IDictionary<string, T> other) : base(other, caseSensitive ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase)
        {
-
        }
 
        protected RegistryDictionary(SerializationInfo info, StreamingContext context) : base(info, context)
        {
-
-       }
-
-       public IEnumerable<string> Names
-       {
-           get { return this.Keys; }
-       }
-
-       public new IEnumerable<T> Values
-       {
-           get { return base.Values; }
-       }
-
-       public bool ContainsName(string name)
-       {
-           return ContainsKey(name);
-       }
-
-       public new IEnumerator<T> GetEnumerator()
-       {
-           return Values.GetEnumerator();
        }
     }
 
 
     /// <summary>
     /// Represents a thread-safe registry of T. This class is efficient for concurrent read access and is not designed for cases when frequent modifications happen.
-    /// It is ideal for lookup of named instances that have much longer time span than components that look them up
+    /// It is ideal for lookup of named instances (such as components) that have much longer time span than components that look them up.
+    /// Registry performs lock-free lookup which speeds-up many concurrent operations that need to map names into objects.
+    /// The enumeration over registry makes a snapshot of its data, hence a registry may be modified by other threads while being enumerated.
     /// </summary>
     [Serializable]
     public class Registry<T> : IRegistry<T> where T : INamed
     {
-          public Registry()
+          public Registry() : this(false)
           {
 
           }
 
-          public Registry(IEnumerable<T> other)
+          public Registry(bool caseSensitive)
           {
-            foreach(var i in other) m_Data[i.Name] = i;
+            m_CaseSensitive = caseSensitive;
+            m_Data = new RegistryDictionary<T>(caseSensitive);
           }
+
+          public Registry(IEnumerable<T> other) : this(other, false)
+          {
+
+          }
+
+          public Registry(IEnumerable<T> other, bool caseSensitive) : this(caseSensitive)
+          {
+            foreach(var i in other)
+              m_Data[i.Name] = i;
+          }
+
+
           
+          [NonSerialized]
           protected object m_Sync = new object();
-          private volatile RegistryDictionary<T> m_Data = new RegistryDictionary<T>();
+
+          private bool m_CaseSensitive;
+          private volatile RegistryDictionary<T> m_Data;
          
-         
+          
+          
+          /// <summary>
+          /// Returns true if the instance differentiates names by case
+          /// </summary>
+          public bool IsCaseSensitive{ get{ return m_CaseSensitive;} }
+
           /// <summary>
           /// Returns a value by name or null if not found
           /// </summary>
@@ -167,7 +175,7 @@ namespace NFX
             {
                 if (m_Data.ContainsKey(item.Name)) return false;
 
-                var data = new RegistryDictionary<T>(m_Data);
+                var data = new RegistryDictionary<T>(m_CaseSensitive, m_Data);
                 data.Add(item.Name, item);
                 
                 JustRegistered(item);
@@ -184,10 +192,17 @@ namespace NFX
           public bool RegisterOrReplace(T item)
           {
             T existing;
-            
+            return RegisterOrReplace(item, out existing);
+          }
+
+          /// <summary>
+          /// Registers item and returns true if it was registered, false if this named instance already existed and was replaced 
+          /// </summary>
+          public bool RegisterOrReplace(T item, out T existing)
+          {
             lock(m_Sync)
             {
-                var data = new RegistryDictionary<T>(m_Data);
+                var data = new RegistryDictionary<T>(m_CaseSensitive, m_Data);
                 
                 if (data.TryGetValue(item.Name, out existing))
                 {
@@ -196,6 +211,7 @@ namespace NFX
                 }
                 else
                 {
+                   existing = default(T);//safeguard
                    data.Add(item.Name, item);
                    JustRegistered(item);
                 }
@@ -215,7 +231,7 @@ namespace NFX
             {
                 if (!m_Data.ContainsKey(item.Name)) return false;
 
-                var data = new RegistryDictionary<T>(m_Data);
+                var data = new RegistryDictionary<T>(m_CaseSensitive, m_Data);
                 data.Remove(item.Name);
                 
                 JustUnregistered(item);
@@ -236,7 +252,7 @@ namespace NFX
                 T item;
                 if (!m_Data.TryGetValue(name, out item)) return false;
 
-                var data = new RegistryDictionary<T>(m_Data);
+                var data = new RegistryDictionary<T>(m_CaseSensitive, m_Data);
                 data.Remove(name);
                 
                 JustUnregistered(item);
@@ -252,23 +268,50 @@ namespace NFX
           /// </summary>
           public virtual void Clear()
           {  
-             m_Data = new RegistryDictionary<T>(); //atomic
+             m_Data = new RegistryDictionary<T>(m_CaseSensitive); //atomic
           }
+
 
           /// <summary>
           /// Tries to find an item by name, and returns it if it is found, otherwise calls a factory function supplying context value and registers the obtained
-          ///  new item. The operation is performed atomically under lock
+          ///  new item. The first lookup is performed in a lock-free way and if an item is found then it is immediately returned.
+          ///  The second check and factory call operation is performed atomically under the lock to ensure consistency
           /// </summary>
           public T GetOrRegister<TContext>(string name, Func<TContext, T> regFactory, TContext context)
           {
+            bool wasAdded;
+            return this.GetOrRegister<TContext>(name, regFactory, context, out wasAdded);
+          }
+
+
+          /// <summary>
+          /// Tries to find an item by name, and returns it if it is found, otherwise calls a factory function supplying context value and registers the obtained
+          ///  new item. The first lookup is performed in a lock-free way and if an item is found then it is immediately returned.
+          ///  The second check and factory call operation is performed atomically under the lock to ensure consistency
+          /// </summary>
+          public T GetOrRegister<TContext>(string name, Func<TContext, T> regFactory, TContext context, out bool wasAdded)
+          {
+            //1st check - lock-free lookup attempt
+            var data = m_Data;
+            T result;
+            if (data.TryGetValue(name, out result))
+            {
+               wasAdded = false;
+               return result;
+            }
+
             lock(m_Sync)
             {
-                var data = m_Data;
-                T result;
-                if (data.TryGetValue(name, out result)) return result;
-
+                //2nd check under lock
+                data = m_Data;//must re-read the reference
+                if (data.TryGetValue(name, out result))
+                {
+                  wasAdded = false;
+                  return result;
+                }
                 result = regFactory( context );
                 Register( result );
+                wasAdded = true;
                 return result;
             }
           }
@@ -336,21 +379,31 @@ namespace NFX
     /// <summary>
     /// Represents a thread-safe registry of T which is ordered by Order property.
     /// This class is efficient for concurrent read access and is not designed for cases when frequent modifications happen.
-    /// It is ideal for lookup of named instances that have much longer time span than components that look them up
+    /// It is ideal for lookup of named instances that have much longer time span than components that look them up.
+    /// Note: since registry does reading in a lock-free manner, it is possible to have an inconsistent read snapshot
+    ///  of ordered items which may capture items that have already/not yet been added to the registry
     /// </summary>
     [Serializable]
     public class OrderedRegistry<T> : Registry<T> where T : INamed, IOrdered
     {
-          public OrderedRegistry()
+          public OrderedRegistry() : this(false)
           {
 
           }
 
-          private List<T> m_OrderedValues = new List<T>();
+          public OrderedRegistry(bool caseSensitive) : base(caseSensitive)
+          {
+            m_OrderedValues = new List<T>();
+          }
+
+
+          private List<T> m_OrderedValues;
 
           /// <summary>
           /// Returns items that registry contains ordered by their Order property.
-          /// The returned sequence is pre-sorted during alteration of registry, so this property access is efficient
+          /// The returned sequence is pre-sorted during alteration of registry, so this property access is efficient.
+          /// Note: since registry does reading in a lock-free manner, it is possible to have an inconsistent read snapshot
+          ///  of ordered items which may capture items that have already/not yet been added to the registry
           /// </summary>
           public IEnumerable<T> OrderedValues
           {
@@ -359,7 +412,9 @@ namespace NFX
 
           /// <summary>
           /// Tries to return an item by its position index in ordered set of items that this registry keeps.
-          /// Null is returned when index is out of bounds
+          /// Null is returned when index is out of bounds.
+          /// Note: since registry does reading in a lock-free manner, it is possible to have an inconsistent read snapshot
+          ///  of ordered items which may capture items that have already/not yet been added to the registry
           /// </summary>
           public T this[int index]
           {

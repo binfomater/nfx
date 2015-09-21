@@ -20,6 +20,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using NFX.ApplicationModel;
+
 namespace NFX.DataAccess.Distributed
 {
     /// <summary>
@@ -106,6 +108,13 @@ namespace NFX.DataAccess.Distributed
         /// Returns registry of named schema areas
         /// </summary>
         IRegistry<IArea>  Areas { get;}
+
+        /// <summary>
+        /// Returns target name suffix which is added at the end.
+        /// This allows for detailed targeting of metadata for particular schema.
+        /// In most cases this property returns null which means no specific schema targeting
+        /// </summary>
+        string TargetSuffix { get;}
     }
 
     /// <summary>
@@ -183,14 +192,6 @@ namespace NFX.DataAccess.Distributed
       Everywhere
     }
 
-    /// <summary>
-    /// Denotes query result returned from bank query execution
-    /// </summary>
-    public interface IQueryResult
-    {
-
-    }
-
 
     /// <summary>
     /// Provides abstraction for Global Database Bank instance
@@ -242,8 +243,8 @@ namespace NFX.DataAccess.Distributed
 
 
         /// <summary>
-        /// Returns ULONG(convertible to gdid) for an object so any object (i.e. a string) may be used as a sharding key.
-        /// Suppose a string needs to be used for sharding, this method translates a string into a 64 bit hash expressed as ulong/GDID 
+        /// Returns ULONG for an object so any object (i.e. a string) may be used as a sharding key.
+        /// Suppose a string needs to be used for sharding, this method translates a string into a 64 bit hash expressed as ulong 
         /// </summary>
         /// <param name="key">An object used for sharding ID translation</param>
         /// <returns>UInt64 that represents the sharding ID</returns>
@@ -253,16 +254,68 @@ namespace NFX.DataAccess.Distributed
         /// <summary>
         /// Loads parcel by fetching it from the bank backened by its primary id
         /// </summary>
+        /// <param name="tParcel">Parcel type to load</param>
         /// <param name="id">The unique GDID of the parcel</param>
         /// <param name="shardingID">
         /// The ID of the entity used for sharding, 
         /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
-        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(tyepof(T)).ShardingParcel
+        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(typeof(T)).ShardingParcel
         /// </param>
         /// <param name="veracity">The level of data veracity</param>
         /// <param name="cacheOpt">The cache control options</param>
         /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        T LoadByID<T>(GDID id, object shardingID = null, DataVeracity veracity = DataVeracity.Maximum, DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null) where T : Parcel;
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Parcel Load(Type tParcel,
+                      GDID id, 
+                      object shardingID = null,
+                      DataVeracity veracity = DataVeracity.Maximum,
+                      DataCaching cacheOpt = DataCaching.LatestData,
+                      int? cacheMaxAgeSec = null,
+                      ISession session = null);
+
+
+        /// <summary>
+        /// Async version: Loads parcel by fetching it from the bank backened by its primary id
+        /// </summary>
+        /// <param name="tParcel">Parcel type to load</param>
+        /// <param name="id">The unique GDID of the parcel</param>
+        /// <param name="shardingID">
+        /// The ID of the entity used for sharding, 
+        /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
+        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(typeof(T)).ShardingParcel
+        /// </param>
+        /// <param name="veracity">The level of data veracity</param>
+        /// <param name="cacheOpt">The cache control options</param>
+        /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task<Parcel> LoadAsync(Type tParcel,
+                                 GDID id, 
+                                 object shardingID = null,
+                                 DataVeracity veracity = DataVeracity.Maximum,
+                                 DataCaching cacheOpt = DataCaching.LatestData,
+                                 int? cacheMaxAgeSec = null,
+                                 ISession session = null);
+
+
+        /// <summary>
+        /// Loads parcel by fetching it from the bank backened by its primary id
+        /// </summary>
+        /// <param name="id">The unique GDID of the parcel</param>
+        /// <param name="shardingID">
+        /// The ID of the entity used for sharding, 
+        /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
+        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(typeof(T)).ShardingParcel
+        /// </param>
+        /// <param name="veracity">The level of data veracity</param>
+        /// <param name="cacheOpt">The cache control options</param>
+        /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        T Load<T>(GDID id, 
+                      object shardingID = null,
+                      DataVeracity veracity = DataVeracity.Maximum,
+                      DataCaching cacheOpt = DataCaching.LatestData,
+                      int? cacheMaxAgeSec = null,
+                      ISession session = null) where T : Parcel;
 
 
         /// <summary>
@@ -272,55 +325,49 @@ namespace NFX.DataAccess.Distributed
         /// <param name="shardingID">
         /// The ID of the entity used for sharding, 
         /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
-        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(tyepof(T)).ShardingParcel
+        /// The parcel type T specifies the DataParcelAttirbute.GetParcelAttr(typeof(T)).ShardingParcel
         /// </param>
         /// <param name="veracity">The level of data veracity</param>
         /// <param name="cacheOpt">The cache control options</param>
         /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        Task<T> LoadByIDAsync<T>(GDID id, object shardingID = null, DataVeracity veracity = DataVeracity.Maximum, DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null) where T : Parcel;
-
-
-        /// <summary>
-        /// Loads parcel by executing a query command in the bank backend fetching necessary parcel by keys/params other than primary ID.
-        /// The returned value is a single parcel (or null if not found), which could be modified/saved back
-        /// </summary>
-        /// <param name="loadCommand">The command object that contains command name and parameters to query the datastore</param>
-        /// <param name="veracity">The level of data veracity</param>
-        /// <param name="cacheOpt">The cache control options</param>
-        /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        Parcel LoadByQuery(Command loadCommand, DataVeracity veracity = DataVeracity.Maximum,  DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null);
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task<T> LoadAsync<T>(GDID id, 
+                                 object shardingID = null,
+                                 DataVeracity veracity = DataVeracity.Maximum,
+                                 DataCaching cacheOpt = DataCaching.LatestData,
+                                 int? cacheMaxAgeSec = null,
+                                 ISession session = null) where T : Parcel;
 
         /// <summary>
-        /// Async version: Loads parcel by executing a query command in the bank backend fetching necessary parcel by keys/params other than primary ID.
-        /// The returned value is a single parcel (or null if not found), which could be modified/saved back
-        /// </summary>
-        /// <param name="loadCommand">The command object that contains command name and parameters to query the datastore</param>
-        /// <param name="veracity">The level of data veracity</param>
-        /// <param name="cacheOpt">The cache control options</param>
-        /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        Task<Parcel> LoadByQueryAsync(Command loadCommand, DataVeracity veracity = DataVeracity.Maximum, DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null);
-        
-
-        /// <summary>
-        /// Loads IQueryResult by executing a query command in the bank backend fetching necessary parcels/records/documents and aggregating the result
+        /// Loads result object by executing a query command in the bank backend fetching necessary parcels/records/documents and aggregating the result.
+        /// The query may return parcel/s that can be modified and saved back into the store
         /// </summary>
         /// <param name="command">The command object that contains command name and parameters to query the datastore</param>
         /// <param name="veracity">The level of data veracity</param>
         /// <param name="cacheOpt">The cache control options</param>
         /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        IQueryResult Query(Command command, DataVeracity veracity = DataVeracity.Maximum,  DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null);
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        object Query(Command command,
+                           DataVeracity veracity = DataVeracity.Maximum,
+                           DataCaching cacheOpt = DataCaching.LatestData,
+                           int? cacheMaxAgeSec = null,
+                           ISession session = null);
 
         /// <summary>
-        /// Async version: Loads IQueryResult by executing a query command in the bank backend fetching necessary parcels/records/documents and aggregating the result
+        /// Async version: Loads result object by executing a query command in the bank backend fetching necessary parcels/records/documents and aggregating the result.
+        /// The query may return parcel/s that can be modified and saved back into the store
         /// </summary>
         /// <param name="command">The command object that contains command name and parameters to query the datastore</param>
         /// <param name="veracity">The level of data veracity</param>
         /// <param name="cacheOpt">The cache control options</param>
         /// <param name="cacheMaxAgeSec">The maximum acceptable age of cached instance, cached data will be re-queried from backend if it is older</param>
-        Task<IQueryResult> QueryAsync(Command command, DataVeracity veracity = DataVeracity.Maximum, DataCaching cacheOpt = DataCaching.LatestData, int? cacheMaxAgeSec = null);
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task<object> QueryAsync(Command command,
+                                      DataVeracity veracity = DataVeracity.Maximum,
+                                      DataCaching cacheOpt = DataCaching.LatestData,
+                                      int? cacheMaxAgeSec = null,
+                                      ISession session = null);
         
-
-
 
         /// <summary>
         /// Saves/sends the parcel into this bank
@@ -339,7 +386,13 @@ namespace NFX.DataAccess.Distributed
         /// Specifies absolute expiration time for this parcel instance in cache.
         /// If null is passed then the value is obtained from the parcel instance
         /// </param>
-        void Save(Parcel parcel, DataCaching cacheOpt = DataCaching.Everywhere, int? cachePriority = null, int? cacheMaxAgeSec = null, DateTime? cacheAbsoluteExpirationUTC = null);
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        void Save(Parcel parcel,
+                  DataCaching cacheOpt = DataCaching.Everywhere,
+                  int? cachePriority = null,
+                  int? cacheMaxAgeSec = null,
+                  DateTime? cacheAbsoluteExpirationUTC = null,
+                  ISession session = null);
 
 
         /// <summary>
@@ -359,8 +412,46 @@ namespace NFX.DataAccess.Distributed
         /// Specifies absolute expiration time for this parcel instance in cache.
         /// If null is passed then the value is obtained from the parcel instance
         /// </param>
-        Task SaveAsync(Parcel parcel, DataCaching cacheOpt = DataCaching.Everywhere, int? cachePriority = null, int? cacheMaxAgeSec = null, DateTime? cacheAbsoluteExpirationUTC = null);
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task SaveAsync(Parcel parcel,
+                       DataCaching cacheOpt = DataCaching.Everywhere,
+                       int? cachePriority = null,
+                       int? cacheMaxAgeSec = null,
+                       DateTime? cacheAbsoluteExpirationUTC = null,
+                       ISession session = null);
 
+
+        /// <summary>
+        /// Removes the parcel from the bank returning true if parcel was found and removed
+        /// </summary>
+        /// <param name="tParcel">Type of parcel to remove</param>
+        /// <param name="id">The unique GDID of the parcel</param>
+        /// <param name="shardingID">
+        /// The ID of the entity used for sharding, 
+        /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
+        /// The parcel type T specifies the DataParcelAttirbute.ShardingParcel
+        /// </param>
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        bool Remove(Type tParcel,
+                       GDID id, 
+                       object shardingID = null,
+                       ISession session = null);
+
+        /// <summary>
+        /// Async version: Removes the parcel from the bank returning true if parcel was found and removed
+        /// </summary>
+        /// <param name="tParcel">Type of parcel to remove</param>
+        /// <param name="id">The unique GDID of the parcel</param>
+        /// <param name="shardingID">
+        /// The ID of the entity used for sharding, 
+        /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
+        /// The parcel type T specifies the DataParcelAttirbute.ShardingParcel
+        /// </param>
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task<bool> RemoveAsync(Type tParcel,
+                                  GDID id, 
+                                  object shardingID = null,
+                                  ISession session = null);
 
         /// <summary>
         /// Removes the parcel from the bank returning true if parcel was found and removed
@@ -371,7 +462,10 @@ namespace NFX.DataAccess.Distributed
         /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
         /// The parcel type T specifies the DataParcelAttirbute.ShardingParcel
         /// </param>
-        bool Remove<T>(GDID id, object shardingID = null) where T : Parcel;
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        bool Remove<T>(GDID id, 
+                       object shardingID = null,
+                       ISession session = null) where T : Parcel;
 
         /// <summary>
         /// Async version: Removes the parcel from the bank returning true if parcel was found and removed
@@ -382,7 +476,10 @@ namespace NFX.DataAccess.Distributed
         /// i.e. a message may use ID of the item that the message relates to, so messages get sharded in the same location as their "parent" record.
         /// The parcel type T specifies the DataParcelAttirbute.ShardingParcel
         /// </param>
-        Task<bool> RemoveAsync<T>(GDID id, object shardingID = null) where T : Parcel;
+        /// <param name="session">User session, if null session will be taken from execution context. The session may be needed for policy filtering</param>
+        Task<bool> RemoveAsync<T>(GDID id, 
+                                  object shardingID = null,
+                                  ISession session = null) where T : Parcel;
     }
 
     /// <summary>

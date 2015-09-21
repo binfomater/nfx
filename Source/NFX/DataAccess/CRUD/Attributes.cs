@@ -125,14 +125,14 @@ namespace NFX.DataAccess.CRUD
 
         public override int GetHashCode()
         {
-            return TargetName.GetHashCode() + Name.GetHashCode();
+            return TargetName.GetHashCodeSenseCase() + Name.GetHashCodeSenseCase();
         }
 
         public override bool Equals(object obj)
         {
             var other = obj as TableAttribute;
             if (other==null) return false;
-            return this.TargetName==other.TargetName && this.Name==other.Name && this.MetadataContent==other.MetadataContent;
+            return this.TargetName.EqualsSenseCase(other.TargetName) && this.Name.EqualsSenseCase(other.Name) && this.MetadataContent.EqualsSenseCase(other.MetadataContent);
         }
     }
 
@@ -399,23 +399,37 @@ namespace NFX.DataAccess.CRUD
 
         public override int GetHashCode()
         {
-            return TargetName.GetHashCode();
+            return TargetName.GetHashCodeSenseCase();
         }
 
         public override bool Equals(object obj)
         {
             var other = obj as FieldAttribute;
             if (other==null) return false;
-            return 
+            var equ = 
+                this.TargetName.EqualsSenseCase(other.TargetName) &&
                 this.StoreFlag   == other.StoreFlag &&
-                this.BackendName == other.BackendName &&
+                this.BackendName.EqualsSenseCase(other.BackendName) &&
                 this.Key         == other.Key &&
                 this.Kind        == other.Kind &&
                 this.Required    == other.Required &&
                 this.Visible     == other.Visible &&
-                this.Min         == other.Min &&
-                this.Max         == other.Max &&
-                this.Default     == other.Default &&
+                
+                (
+                  (this.Min==null && other.Min==null) ||
+                  (this.Min!=null && other.Min!=null && this.Min.Equals(other.Min))
+                ) &&
+
+                (
+                  (this.Max==null && other.Max==null) ||
+                  (this.Max!=null && other.Max!=null && this.Max.Equals(other.Max))
+                ) &&
+                
+                (
+                  (this.Default==null && other.Default==null) ||
+                  (this.Default!=null && other.Default!=null && this.Default.Equals(other.Default))
+                ) &&
+
                 this.MinLength   == other.MinLength &&
                 this.MaxLength   == other.MaxLength &&
                 this.CharCase    == other.CharCase &&
@@ -423,6 +437,8 @@ namespace NFX.DataAccess.CRUD
                 this.Description == other.Description &&
                 this.MetadataContent==other.MetadataContent &&
                 this.NonUI == other.NonUI;
+
+            return equ;
         }
     }
 }
